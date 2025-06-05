@@ -1,0 +1,170 @@
+#################### СОЗДАНИЕ ТАБЛИЦЫ ЧЕРЕЗ СКРИПТ ##############################
+
+!Запомните имя сервера, оно пригодиться для подключения бд к проге
+ => SQL Server management => Создаете своое бд и кликайте на него => Вверху будет кнопка "Создать запрос"
+
+ ........ КОД ТАБЛИЦЫ ...........
+
+#СОЗДАНИЕ ТАБЛИЦЫ
+
+INT - число
+VARCHAR(255) - строка
+PRIMARY KEY - ключ !запишите под айдишником вашей строки
+NOT NULL - писать везде где нет либо PRIMARY KEY 
+ 
+ -- Создание таблицы User
+
+CREATE TABLE название таблицы (
+
+    имя(id_user) тип(INT/VARCHAR(255)) параметр(PRIMARY KEY/NOT NULL),
+    ...
+  
+);
+
+# ПРИМЕР СОЗДАНИЯ ЗАПРОСА
+
+CREATE TABLE User (
+    id_user INT PRIMARY KEY,          -- Уникальный ID пользователя
+    ФИО VARCHAR(255) NOT NULL,        -- Фамилия Имя Отчество пользователя
+    должность VARCHAR(100) NOT NULL   -- Должность пользователя
+);
+
+-- Создание таблицы Task
+CREATE TABLE Task (
+    id_task INT PRIMARY KEY,           -- Уникальный ID задачи
+    id_user INT NOT NULL,              -- ID пользователя, к которому прикреплена задача
+    фио VARCHAR(255) NOT NULL,         -- Фамилия Имя Отчество (копия из User)
+    Название_задачи VARCHAR(255) NOT NULL, -- Название задачи
+    Текст_задачи TEXT NOT NULL,        -- Текст задачи (большой текст)
+    состояние VARCHAR(50) NOT NULL,    -- Состояние задачи
+    FOREIGN KEY (id_user) REFERENCES User(id_user) -- Внешний ключ на User
+);
+
+# ЗАПОЛНЕНИЕ ТАБЛИЦЫ
+
+INSERT INTO название таблицы (название колонки1, название колонки2, ....) VALUES
+(число1, строка2, ....),
+
+# ПРИМЕР
+INSERT INTO Task (id_task, id_user, фио, Название_задачи, Текст_задачи, состояние) VALUES
+(101, 1, 'Иванов Иван Иванович', 'Подготовить отчет', 'Необходимо подготовить финансовый отчет за последний квартал, включая анализ затрат и прогноз на следующий период.', 'В процессе'),
+(102, 2, 'Петров Пётр Петрович', 'Анализ данных', 'Провести глубокий анализ пользовательских данных для выявления тенденций и аномалий.', 'Ожидает начала'),
+
+
+############### ПОДКЛЮЧЕНИЕ К ФОРМЕ БД ##########################
+
+# КАК НАЙТИ ЛОГИН
+
+Если ты используешь SQL Server Management Studio (SSMS):  
+   - При подключении к серверу в окне входа в систему смотри поле "Имя пользователя" (Login). Обычно это либо sa (администратор), либо другой пользователь, созданный администратором.  
+   - Если ты не знаешь пользователей, их можно посмотреть так:  
+     - Подключись к серверу с правами администратора.  
+     - В окне «Обозреватель объектов» раскрой папку Security (Безопасность) → Logins (Входы). Там перечислены все пользователи SQL Server.
+
+# КАК ДОЛЖНА ВЫГЛЯДИТЬ СТРОКА ПОДКЛЮЧЕНИЯ
+
+private string connectionString = @"Server=DESKTOP-FLMII1A;Database=Factory1;User Id=твой_логин;Password=твой_пароль;TrustServerCertificate=True;";
+
+- Server=DESKTOP-FLMII1A — адрес сервера базы данных, к которому происходит подключение. В данном случае это имя компьютера или экземпляра SQL Server.  
+- Database=Factory1 — имя базы данных на сервере, к которой будет осуществлено подключение.  
+- User Id=твой_логин — имя пользователя для аутентификации в SQL Server. Этот пользователь должен иметь права доступа к указанной базе данных.  
+- Password=твой_пароль — пароль пользователя, соответствующий User Id.  
+- TrustServerCertificate=True — указывает, что при использовании шифрования соединения следует доверять сертификату сервера без проверки его подлинности. Часто используется при самоподписанных сертификатах или в тестовых средах.
+
+
+# ВЫГРУЗКА
+
+string connectionString = @"Server=DESKTOP-FLMII1A;Database=Factory1;Trusted_Connection=True;TrustServerCertificate=True;"; // строка подключение к бл !БЕЗ ID USER и PASSWORD
+
+ List<List<string>> Tasks = new List<List<string>>(); // Создание нового списка "Tasks" его имя
+
+
+ using (SqlConnection connection = new SqlConnection(connectionString)) // подключение к бд
+ {
+     connection.Open(); // Открытие бд
+
+     
+     string queryTasks = "SELECT id_task, id_user, фио, Название_задачи, Текст_задачи, состояние FROM Task"; // Строка выгрузки !ФОРМАТ "SELECT название столбцов которые нужно выгрузить FROM имя таблицы откуда"
+     using (SqlCommand command = new SqlCommand(queryTasks, connection)) // создание команды
+     using (SqlDataReader reader = command.ExecuteReader()) // запуск чтения
+     {
+         while (reader.Read()) // чтение 
+         {
+
+             Tasks.Add(new List<string> {                 // добовление в список 
+                 Convert.ToString(reader.GetInt32(0)),    // добовления элкментов 
+                 Convert.ToString(reader.GetInt32(1)),
+                 reader.GetString(2),
+                 reader.GetString(3),
+                 reader.GetString(4),
+                 reader.GetString(5)
+             });
+
+             // В итоге получиться список Tasks(ваше название)
+             // Tasks[номер столбца][номер элемента]
+             // ПРИМЕР Tasks[0][0] - возьмет в первом столбце первый элемент
+
+         }
+     }
+ }
+
+ # ЗАГРУЗКА
+
+ # ПРИМЕР 
+ string query = "INSERT INTO Task (id_task, id_user, фио, Название_задачи, Текст_задачи, состояние) VALUES (@newId, @id_user, @fio, @name_work, @text, @radioAnsw)";
+
+using (SqlConnection connection = new SqlConnection(connectionString))
+{
+    connection.Open();
+
+    using (SqlCommand command = new SqlCommand(query, connection))
+    {
+        // Добавляем параметры, чтобы избежать SQL-инъекций
+        command.Parameters.AddWithValue("@newId", newId);
+        command.Parameters.AddWithValue("@id_user", id_user);
+        command.Parameters.AddWithValue("@fio", fio);
+        command.Parameters.AddWithValue("@name_work", name_work);
+        command.Parameters.AddWithValue("@text", text);
+        command.Parameters.AddWithValue("@radioAnsw", radioAnsw);
+        command.ExecuteNonQuery();
+
+        MessageBox.Show("Задача успешно добавлен!");
+
+    }
+}
+
+
+########## СОЗДАНИЕ ДОЧЕРНИХ ФОРМ ####################
+
+Тыкаем на главную форму где будут находиться все остальные окна 
+Меняем свойства формы IsMdiConteiner => True
+
+# Вызов с основной формы 
+
+Form2 form2 = new Form2();
+form2.mdiParent = this;
+form2.Show();
+
+# Вызов одной дочерний формы с другой 
+
+AddUser addUser = new AddUser();
+addUser.MdiParent = Form.ActiveForm; 
+addUser.Show();
+
+#### ПРИМЕР ДОБАВЛЕНИЯ В ТАБЛИЦУ 
+
+List<List<string>> Users = output_Users();
+
+
+dataGridView1.Rows.Clear();
+dataGridView1.ColumnCount = 3;
+
+dataGridView1.Columns[0].HeaderText = "ID";
+dataGridView1.Columns[1].HeaderText = "ФИО";
+dataGridView1.Columns[2].HeaderText = "Должнасть";
+
+
+for (int user_num = 0; user_num < Users.Count; user_num++)
+{
+    dataGridView1.Rows.Add(Users[user_num][0], Users[user_num][1], Users[user_num][2]);
+}
