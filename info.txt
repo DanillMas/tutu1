@@ -163,8 +163,29 @@ dataGridView1.Columns[0].HeaderText = "ID";
 dataGridView1.Columns[1].HeaderText = "ФИО";
 dataGridView1.Columns[2].HeaderText = "Должнасть";
 
-
 for (int user_num = 0; user_num < Users.Count; user_num++)
 {
     dataGridView1.Rows.Add(Users[user_num][0], Users[user_num][1], Users[user_num][2]);
+}
+
+######Пример теста #######
+using NUnit.Framework;
+
+namespace MyTests
+{
+    public class Calculator
+    {
+        public int Add(int a, int b) => a + b;
+    }
+
+    [TestFixture]
+    public class CalculatorTests
+    {
+        [Test]
+        public void Add_TwoNumbers_ReturnsSum()
+        {
+            var calculator = new Calculator();
+            Assert.AreEqual(8, calculator.Add(3, 5));
+        }
+    }
 }
